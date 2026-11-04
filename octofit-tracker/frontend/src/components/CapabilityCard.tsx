@@ -1,16 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { getJson } from '../api/client.js';
 
 type Props<T> = {
   title: string;
   description: string;
-  endpoint: string;
-  itemsKey: string;
+  loadItems: () => Promise<T[]>;
   emptyMessage: string;
   renderItems: (items: T[]) => ReactNode;
 };
 
-export function CapabilityCard<T>({ title, description, endpoint, itemsKey, emptyMessage, renderItems }: Props<T>) {
+export function CapabilityCard<T>({ title, description, loadItems, emptyMessage, renderItems }: Props<T>) {
   const [items, setItems] = useState<T[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,17 +16,16 @@ export function CapabilityCard<T>({ title, description, endpoint, itemsKey, empt
     let active = true;
     setItems(null);
     setError(null);
-    getJson<Record<string, unknown>>(endpoint)
-      .then((response) => {
-        const result = response[itemsKey];
+    loadItems()
+      .then((result) => {
         if (!Array.isArray(result)) throw new Error('The server returned an invalid response');
-        if (active) setItems(result as T[]);
+        if (active) setItems(result);
       })
       .catch((reason: unknown) => {
         if (active) setError(reason instanceof Error ? reason.message : 'Unknown error');
       });
     return () => { active = false; };
-  }, [endpoint, itemsKey]);
+  }, [loadItems]);
 
   return <section className="card h-100"><div className="card-body">
     <h2 className="h4">{title}</h2>
